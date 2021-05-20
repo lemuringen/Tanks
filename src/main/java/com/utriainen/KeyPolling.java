@@ -9,7 +9,7 @@ import java.util.HashMap;
 public class KeyPolling {
     private static Scene scene;
 
-    private static final HashMap<KeyCode, Long> timedKeysCurrentlyDown = new HashMap();
+    private static final HashMap<KeyCode, Long> timedKeysCurrentlyDown = new HashMap<>();
     private static final HashMap<KeyCode, Long> releasedKeys = new HashMap<>();
     private KeyPolling() {
     }
@@ -38,9 +38,7 @@ public class KeyPolling {
 
     private void setScene(Scene scene) {
         KeyPolling.scene = scene;
-        KeyPolling.scene.setOnKeyPressed((keyEvent -> {
-            timedKeysCurrentlyDown.put(keyEvent.getCode(),new Date().getTime());
-        }));
+        KeyPolling.scene.setOnKeyPressed((keyEvent -> timedKeysCurrentlyDown.put(keyEvent.getCode(),new Date().getTime())));
         KeyPolling.scene.setOnKeyReleased((keyEvent -> {
             releasedKeys.put(keyEvent.getCode(), new Date().getTime()-timedKeysCurrentlyDown.get(keyEvent.getCode()));
             timedKeysCurrentlyDown.remove(keyEvent.getCode());

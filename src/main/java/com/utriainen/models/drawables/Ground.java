@@ -1,15 +1,14 @@
 package com.utriainen.models.drawables;
 
-import javafx.collections.ObservableList;
+import com.utriainen.models.room.Coordinates;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Ground implements Drawable {
-    private Polygon ground;
+    private final Polygon ground;
 
     public Polygon getGround() {
         return ground;
@@ -33,15 +32,29 @@ public class Ground implements Drawable {
 
         for (int i = 0; i < points.size(); i++) {
             if (i % 2 == 0) {
-                xCoordinates[i / 2 + i % 2] = points.get(i);
+                xCoordinates[i / 2] = points.get(i);
             } else {
-                yCoordinates[(i / 2 + i % 2) - 1] = points.get(i);
+                yCoordinates[i / 2] = points.get(i);
             }
         }
         context.fillPolygon(xCoordinates, yCoordinates, xCoordinates.length);
 
     }
+    public void subtractCircle(Coordinates center, double radius){
+        double angle = Math.PI * 2;
+        int stepCount = 16;
+        double stepSize = angle/stepCount;
+        while(angle >= 0){
+            double x;
+            double y;
+            x = Math.cos(angle) * radius + center.getX();
+            y = Math.sin(angle) * radius + center.getY();
+            if(ground.contains(x,y)){
 
+            }
+            angle -= stepSize;
+        }
+    }
     public boolean detectCollision(Entity entity) {
         return ground.contains(entity.getCoordinates().getX(), entity.getCoordinates().getY());
     }

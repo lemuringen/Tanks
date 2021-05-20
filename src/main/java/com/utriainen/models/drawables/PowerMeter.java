@@ -5,9 +5,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 public class PowerMeter implements Drawable {
-    private Coordinates start;
-    private Coordinates top;
-    private int width;
+    private final Coordinates start;
+    private final Coordinates top;
+    private final int width;
     private double power;
     private Color color;
 

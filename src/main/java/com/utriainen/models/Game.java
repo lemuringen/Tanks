@@ -106,7 +106,7 @@ public class Game {
             projectile.updatePosition(frameDuration);
             if (projectile.testGroundCollision(ground)) {
                 /*
-                Idea: map(projectileType,Explosion) use static constructor Explosion.getExplosion(projectilType, Coordinates)
+                Idea: map(projectileType,Explosion) use static constructor Explosion.getExplosion(projectileType, Coordinates)
                  */
                 explosions.add(projectile.getExplosion());
                 newDrawables.add(projectile.getExplosion());

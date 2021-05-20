@@ -5,12 +5,10 @@ import com.utriainen.models.room.Vector;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
-import java.util.List;
-
 public class Tank extends Entity {
-    private double barrelLength;
+    private final double barrelLength;
     private double aimDirection;
-    private double firePower = 3.0;
+    private final double firePower = 3.0;
     private boolean isFiring = false;
 
     private double powerMeter = 0.0;
