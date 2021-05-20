@@ -54,18 +54,16 @@ public class Explosion implements Drawable {
     public void explode() {
         setWidth(getWidth() - 0.5);
         setHeight(getHeight() - 0.5);
-        getCoordinates().setRelativeX(0.25);
-        getCoordinates().setRelativeY(0.25);
         if (getWidth() <= 0) isDone = true;
     }
 
     @Override
     public void draw(GraphicsContext context) {
         context.setFill(Color.YELLOW);
-        context.fillOval(getCoordinates().getX() - (getWidth() * 0.5), getCoordinates().getY() - (getWidth() * 0.5), getWidth() * 2, getHeight() * 2);
+        context.fillOval(getCoordinates().getX() - (getWidth() * 0.5), getCoordinates().getY() - (getHeight() * 0.5), getWidth(), getHeight());
 
         context.setFill(getColor());
-        context.fillOval(getCoordinates().getX(), getCoordinates().getY(), getWidth(), getHeight());
+        context.fillOval(getCoordinates().getX() - (getWidth() * 0.6 * 0.5), getCoordinates().getY() - (getHeight()* 0.6 * 0.5), getWidth()*0.6, getHeight()*0.6);
 
     }
 

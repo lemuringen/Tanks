@@ -15,7 +15,7 @@ public class Projectile extends Entity {
 
     public Explosion getExplosion(){
         if(explosion == null){
-            explosion = new Explosion(getCoordinates().getRelativeCoordinates(-25,-25), getWidth()*20, getHeight()*20,Color.RED);
+            explosion = new Explosion(getCoordinates().clone(), getWidth()*20, getHeight()*20,Color.RED);
         }
         return explosion;
     }
