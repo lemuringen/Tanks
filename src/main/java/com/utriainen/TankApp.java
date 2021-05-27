@@ -8,7 +8,7 @@ import javafx.stage.Stage;
 
 
 public class TankApp extends Application {
-    public static double GRAVITY_CONSTANT = 0.5;
+    public static double GRAVITY_CONSTANT = 0.5; //todo move wtf
 
     public static void main(String[] args) {
         launch(args);
@@ -22,7 +22,7 @@ public class TankApp extends Application {
         KeyPolling.getInstance().pollScene(scene);
 
         primaryStage.setScene(scene);
-        primaryStage.setTitle("EdenCoding - SimpleSpaceShooter");
+        primaryStage.setTitle("tanks!");
 
         //primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/images/landscape.png")));
 

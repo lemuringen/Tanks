@@ -42,5 +42,10 @@ public class Coordinates {
         this.x = x;
         this.y = y;
     }
-
+public boolean equals(Object o){
+        if(!(o instanceof Coordinates)) return false;
+        Coordinates coordinates = (Coordinates) o;
+        if(coordinates.getY() == getY() && coordinates.getX()==getX())return true;
+        return false;
+}
 }

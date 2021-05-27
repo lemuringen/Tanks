@@ -1,17 +1,18 @@
 package com.utriainen.models.room;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class PolygonVertex {
     private PolygonVertex previousVertex;
-    private Coordinates thisVertex;
+    private Coordinates coordinates;
     private PolygonVertex nextVertex;
     private boolean isFirst;
 
-    private PolygonVertex(PolygonVertex previousVertex, Coordinates thisVertex, PolygonVertex nextVertex, boolean isFirst) {
+    public PolygonVertex(PolygonVertex previousVertex, Coordinates coordinates, PolygonVertex nextVertex, boolean isFirst) {
         this.previousVertex = previousVertex;
-        this.thisVertex = thisVertex;
+        this.coordinates = coordinates;
         this.nextVertex = nextVertex;
         this.isFirst = isFirst;
     }
@@ -19,8 +20,8 @@ public class PolygonVertex {
     public static List<PolygonVertex> makePolygon(List<Coordinates> vertices) {
         if (vertices == null) return null;
         List<PolygonVertex> polygonVertices = new ArrayList<>();
-        // polygonVertices.add(new PolygonVertex(vertices.get(vertices.size()-1), vertices.get(0), vertices.get(1), true));
         polygonVertices.add(new PolygonVertex(null, vertices.get(0), null, true));
+
         PolygonVertex currentVertex;
         for (int i = 1; i < vertices.size()-1; i++) {
             currentVertex = new PolygonVertex(polygonVertices.get(i - 1), vertices.get(i), null, false);
@@ -34,20 +35,18 @@ public class PolygonVertex {
         return polygonVertices;
     }
 //does not work before first vertex
-    static public List<PolygonVertex> insertPolygonLink(List<Coordinates> newVertexCoordinates, List<PolygonVertex> oldPolygon, PolygonVertex startConnection, PolygonVertex endConnection) {
+    static public void insertPolygonLink(List<Coordinates> newVertexCoordinates, PolygonVertex firstConnection, PolygonVertex lastConnection) {
         List<PolygonVertex> newPolygon = PolygonVertex.makePolygon(newVertexCoordinates);
-        int i0 = oldPolygon.indexOf(startConnection);
-        newPolygon.get(0).setPreviousVertex(oldPolygon.get(i0));
-        oldPolygon.get(i0).setNextVertex(newPolygon.get(0));
+        newPolygon.get(0).setPreviousVertex(firstConnection);
         newPolygon.get(0).setFirst(false);
-        int i1 = oldPolygon.indexOf(endConnection);
-        newPolygon.get(newPolygon.size()-1).setNextVertex(oldPolygon.get(i1));
-        oldPolygon.get(i1).setPreviousVertex(newPolygon.get(newPolygon.size()-1));
-        newPolygon.addAll(oldPolygon.subList(i1,oldPolygon.size()));
-        newPolygon.addAll(0,oldPolygon.subList(0,i0+1));
-        return newPolygon;
-    }
+        firstConnection.setNextVertex(newPolygon.get(0));
+        newPolygon.get(newPolygon.size()-1).setNextVertex(lastConnection);
+        lastConnection.setPreviousVertex(newPolygon.get(newPolygon.size()-1));
 
+    }
+static public void insertPolygonLink(LinkedHashMap<Coordinates, PolygonVertex> mapFromInterceptionPoints, List<Coordinates> newVertices ){
+
+}
     public PolygonVertex getPreviousVertex() {
         return previousVertex;
     }
@@ -56,12 +55,12 @@ public class PolygonVertex {
         this.previousVertex = previousVertex;
     }
 
-    public Coordinates getThisVertex() {
-        return thisVertex;
+    public Coordinates getCoordinates() {
+        return coordinates;
     }
 
-    public void setThisVertex(Coordinates thisVertex) {
-        this.thisVertex = thisVertex;
+    public void setCoordinates(Coordinates coordinates) {
+        this.coordinates = coordinates;
     }
 
     public PolygonVertex getNextVertex() {
@@ -80,4 +79,18 @@ public class PolygonVertex {
         isFirst = first;
     }
 
+
+    public int getDistanceToHead(){
+        int i = 1;
+        if(isFirst()) return i;
+        return getPreviousVertex().getDistanceToHead(++i);
+    }
+    private int getDistanceToHead(int i){
+        if(isFirst()) return i;
+        return getPreviousVertex().getDistanceToHead(++i);
+    }
+    public PolygonVertex getHead(){
+        if(isFirst()) return this;
+        return previousVertex.getHead();
+    }
 }

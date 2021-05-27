@@ -109,7 +109,7 @@ public class Game {
                 Idea: map(projectileType,Explosion) use static constructor Explosion.getExplosion(projectileType, Coordinates)
                  */
                 Explosion explosion = projectile.getExplosion();
-                ground.deformGround(explosion.getCoordinates(), explosion.getWidth()/2);
+                ground.subtractCircle(explosion.getCoordinates(), explosion.getWidth()/2);
                 ground.updateGround();
                 explosions.add(explosion);
                 newDrawables.add(projectile.getExplosion());
