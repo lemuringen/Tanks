@@ -1,8 +1,6 @@
 package com.utriainen.models.drawables;
 
-import com.utriainen.models.room.Coordinates;
-import com.utriainen.models.room.Line;
-import com.utriainen.models.room.PolygonVertex;
+import com.utriainen.models.room.*;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -14,7 +12,7 @@ import java.util.List;
 
 public class Ground implements Drawable {
     private Polygon ground;
-    private List<PolygonVertex> vertices;
+    private PolygonChain polygonChain;
 
     public Polygon getGround() {
         return ground;
@@ -31,155 +29,150 @@ public class Ground implements Drawable {
         vertices.add(new Coordinates(2420, 880));
         vertices.add(new Coordinates(2420, 1580));
         vertices.add(new Coordinates(-500, 1580));
-        this.vertices = PolygonVertex.makePolygon(vertices);
+        this.polygonChain = new PolygonChain(vertices);
     }
-
 
 
     public void updateGround() {
-        List<PolygonVertex> tmpList = new ArrayList<>();
-        PolygonVertex currentVertex = vertices.get(0);
-        boolean isHeadNext = false;
-        while (!isHeadNext) {
-            tmpList.add(currentVertex);
-            if (currentVertex.getNextVertex().isFirst()) {
-                isHeadNext = true;
-            } else {
-                currentVertex = currentVertex.getNextVertex();
-            }
-        }
-        vertices = tmpList;
-
-        ground = buildPolygon(vertices.get(0).getHead());
+        ground = buildPolygon();
     }
 
-    public Polygon buildPolygon(PolygonVertex polygonHead) {
-        double[] polygonVertices = new double[polygonHead.getPreviousVertex().getDistanceToHead() * 2];
-        PolygonVertex pointer = polygonHead;
+    public Polygon buildPolygon() {
+        double[] polygonVertices = new double[polygonChain.size() * 2];
+        PolygonLink pointer;
         int counter = 0;
-        do {
+        Iterator<PolygonLink> it = polygonChain.iterator();
+        while (it.hasNext()) {
+            pointer = it.next();
             polygonVertices[counter] = pointer.getCoordinates().getX();
             polygonVertices[counter + 1] = pointer.getCoordinates().getY();
             counter += 2;
-            pointer = pointer.getNextVertex();
-        } while (!pointer.isFirst());
+        }
         return new Polygon(polygonVertices);
     }
 
-    public List<PolygonVertex> findEdgeVertices(Coordinates edgePoint) {
-        PolygonVertex pointer = vertices.get(0).getHead();
+    /*TODO since no vertices should be within explosion radius we can exclude som comparisons based on the radius*/
+    public List<PolygonLink> findEdgeVertices(Coordinates edgePoint) {
+        List<PolygonLink> neighbourVertices = new ArrayList<>();
+        Iterator<PolygonLink> it = polygonChain.iterator();
+        PolygonLink link;
         double edgePointX = edgePoint.getX();
         double edgePointY = edgePoint.getY();
 
-        List<PolygonVertex> edgeNeighbours = new ArrayList<>();
         do {
-            double currX = pointer.getCoordinates().getX();
-            double currY = pointer.getCoordinates().getY();
-            double nextX = pointer.getNextVertex().getCoordinates().getX();
-            double nextY = pointer.getNextVertex().getCoordinates().getY();
+            link = it.next();
+            double currX = link.getCoordinates().getX();
+            double currY = link.getCoordinates().getY();
+            double nextX = link.getNextLink().getCoordinates().getX();
+            double nextY = link.getNextLink().getCoordinates().getY();
 
             if (Math.min(currX, nextX) < edgePointX && edgePointX < Math.max(currX, nextX)
                     && Math.min(currY, nextY) < edgePointY + 10 && edgePointY - 10 < Math.max(currY, nextY)) {
-                edgeNeighbours.add(pointer);
-                edgeNeighbours.add(pointer.getNextVertex());
-                return edgeNeighbours;
+                neighbourVertices.add(link);
+                neighbourVertices.add(link.getNextLink());
+                return neighbourVertices;
             }
-            pointer = pointer.getNextVertex();
-        } while (!pointer.isFirst());
+        } while (it.hasNext());
         return null; //throw exception?
     }
 
-    private void sortOutToBeRemovedVertices(List<PolygonVertex> toBeKept, List<PolygonVertex> toBeRemoved, PolygonVertex head, Circle circle) {
-        PolygonVertex pointer = head;
-        do {
-            if (!circle.contains(pointer.getCoordinates().getX(), pointer.getCoordinates().getY())) {
-                toBeKept.add(pointer);
-            } else {
-                toBeRemoved.add(pointer);
-            }
-            pointer = pointer.getNextVertex();
-        } while (!pointer.isFirst());
-    }
-
-    /*todo which intersection should i choose*/
-    /*todo DOES MODIFY POLYGON not clear*/
-    public List<PolygonVertex> findCircleGroundIntersections(List<PolygonVertex> pointsInsideCircle, Circle circle) {
-        List<PolygonVertex> interceptionPoints = new ArrayList<>();
-        for (int i = 0; i < pointsInsideCircle.size(); i++) {
-            PolygonVertex vertex = pointsInsideCircle.get(i);
-            boolean isEdgeStart = !pointsInsideCircle.contains(vertex.getPreviousVertex());
-            boolean isEdgeEnd = !pointsInsideCircle.contains(vertex.getNextVertex());
-            if (isEdgeStart || isEdgeEnd) {
-                if (isEdgeStart) {
-                    Line l = new Line(vertex.getPreviousVertex().getCoordinates(), vertex.getCoordinates());
-                    List<Coordinates> interceptions = l.findIntersection(circle);
-                    Coordinates intersection = findClosestCoordinate(interceptions, vertex.getPreviousVertex().getCoordinates());
-                    interceptionPoints.add(new PolygonVertex(vertex.getPreviousVertex(), intersection, null, false));
-                } else if (isEdgeEnd) {
-                    Line l = new Line(vertex.getCoordinates(), vertex.getNextVertex().getCoordinates());
-                    List<Coordinates> interceptions = l.findIntersection(circle);
-                    Coordinates intersection = findClosestCoordinate(interceptions, vertex.getNextVertex().getCoordinates());
-                    interceptionPoints.add(new PolygonVertex(null, intersection, vertex.getNextVertex(), false));
+    public List<PolygonLink> findCircleGroundIntersections2(Circle circle) {
+        List<PolygonLink> intersectionLinks = new ArrayList<>();
+        Iterator<PolygonLink> it = polygonChain.iterator();
+        PolygonLink link;
+        PolygonLink preLink;
+        PolygonLink nextLink;
+        double currX;
+        double currY;
+        double preX;
+        double preY;
+        double nextX;
+        double nextY;
+        while (it.hasNext()) {
+            link = it.next();
+            preLink = link.getPreviousLink();
+            nextLink = link.getNextLink();
+            currX = link.getCoordinates().getX();
+            currY = link.getCoordinates().getY();
+            preX = link.getPreviousLink().getCoordinates().getX();
+            preY = link.getPreviousLink().getCoordinates().getY();
+            nextX = link.getNextLink().getCoordinates().getX();
+            nextY = link.getNextLink().getCoordinates().getY();
+            if (circle.contains(currX, currY)) {
+                if (!circle.contains(preX, preY)) {
+                    Coordinates intersection = findClosestCoordinate(new Line(preLink.getCoordinates(), link.getCoordinates()).findIntersection(circle), preLink.getCoordinates());
+                    intersectionLinks.add(new PolygonLink(preLink, intersection, null, false));
+                }
+                if (!circle.contains(nextX, nextY)) {
+                    Coordinates intersection = findClosestCoordinate(new Line(link.getCoordinates(), nextLink.getCoordinates()).findIntersection(circle), nextLink.getCoordinates());
+                    intersectionLinks.add(new PolygonLink(null, intersection, nextLink, false));
                 }
             }
-            pointsInsideCircle.get(0).getPreviousVertex().setNextVertex(interceptionPoints.get(0));
-            pointsInsideCircle.get(pointsInsideCircle.size() - 1).getNextVertex().setPreviousVertex(interceptionPoints.get(interceptionPoints.size() - 1));
+        }
+        if (intersectionLinks.size() == 0) { //todo
+            List<PolygonLink> edgeVertices = findEdgeVertices(new Coordinates(circle.getCenterX(), circle.getCenterY()));
+            List<Coordinates> intersections = new Line(edgeVertices.get(0).getCoordinates(), edgeVertices.get(1).getCoordinates()).findIntersection(circle);
+            Coordinates first = intersections.get(1);
+            Coordinates last = intersections.get(0);
+            if (findClosestCoordinate(intersections, edgeVertices.get(0).getCoordinates()).equals(intersections.get(0))) {
+                first = intersections.get(0);
+                last = intersections.get(1);
+            }
+            intersectionLinks.add(new PolygonLink(edgeVertices.get(0), first, null, false));
+            intersectionLinks.add(new PolygonLink(null, last, edgeVertices.get(1), false));
+        }
+        return intersectionLinks;
+    }
+
+    public static <T> List<T> startListAtIndex(List<T> oldList, int index) {
+        List<T> list = oldList.subList(index, oldList.size());
+        list.addAll(oldList.subList(0, index));
+        return list;
+    }
+
+    public void addNewLinksToGround(List<PolygonLink> intersections, List<Coordinates> perimeterPoints, Circle circle) {
+        for (int i = 0; i < intersections.size(); i += 2) {
+            intersections.get(i).getPreviousLink().setNextLink(intersections.get(i));
+            intersections.get(i + 1).getNextLink().setPreviousLink(intersections.get(i + 1));
+            intersections.get(i).setNextLink(intersections.get(i + 1));
+            intersections.get(i + 1).setPreviousLink(intersections.get(i));
 
         }
-        return interceptionPoints;
+        int intersectionsCounter = 0;
+        boolean withinTeeth = false;
+        List<Coordinates> teeth = new ArrayList<>();
+        double currX;
+        double currY;
+        for (Coordinates perimeterPoint : perimeterPoints) {
+            currX = perimeterPoint.getX();
+            currY = perimeterPoint.getY();
+
+            if (ground.contains(currX, currY)) {
+                withinTeeth = true;
+            } else {
+                if (!teeth.isEmpty() && withinTeeth) {
+                    intersections.get(intersectionsCounter).insertLinksAfter(teeth);
+                    teeth = new ArrayList<>();
+                }
+                withinTeeth = false;
+                if (intersectionsCounter + 2 < intersections.size()) {
+                    intersectionsCounter += 2;
+                }
+            }
+            if (withinTeeth) {
+                teeth.add(perimeterPoint);
+            }
+        }
+
     }
 
     public void subtractCircle(Coordinates center, double radius) {
         Circle circle = new Circle(center.getX(), center.getY(), radius);
-        List<PolygonVertex> toBeRemoved = new ArrayList<>();
-        List<PolygonVertex> toBeKept = new ArrayList<>();
-        sortOutToBeRemovedVertices(toBeKept, toBeRemoved, vertices.get(0), circle);
-
-        List<PolygonVertex> interceptionPoints;
-        if (toBeRemoved.size() != 0) {
-            interceptionPoints = findCircleGroundIntersections(toBeRemoved, circle);
-        } else {
-            interceptionPoints = findEdgeVertices(center);
-        }
-        List<Coordinates> perimeterPoints = getCirclePerimeterPoints(center, radius);
-        List<Integer> emptyIndices = new ArrayList<>();
-        List<Coordinates> includedPerimeterPoints = new ArrayList<>();
-        for (Coordinates point : perimeterPoints) {
-            if (ground.contains(point.getX(), point.getY())) {
-                includedPerimeterPoints.add(point);
-            } else {
-                emptyIndices.add(perimeterPoints.indexOf(point));
-            }
-        }
-        Coordinates closestCoordinate = findClosestCoordinate(includedPerimeterPoints, interceptionPoints.get(0).getCoordinates());//todo what if no vertices toBeRemoved?
-        int i = perimeterPoints.indexOf(closestCoordinate);
-        Iterator<PolygonVertex> it = interceptionPoints.iterator();
-        PolygonVertex vertex = interceptionPoints.get(0);
-        boolean lastWasEmpty = true;
-        int stopIndex = perimeterPoints.size();
-
-        for (int o = i; o < stopIndex; o++) {
-            if (!emptyIndices.contains(o)) {
-                if (lastWasEmpty) {
-                    vertex = it.next();
-                }
-                vertex.setNextVertex(new PolygonVertex(vertex, perimeterPoints.get(o), null, false));
-                vertex = vertex.getNextVertex();
-                lastWasEmpty = false;
-            } else if (emptyIndices.contains(o)) {
-                if (!lastWasEmpty && it.hasNext()) {
-                    PolygonVertex tmp = it.next();
-                    vertex.setNextVertex(tmp);
-                    tmp.setPreviousVertex(vertex);
-                    vertex = tmp; //should do nothing?
-                }
-                lastWasEmpty = true;
-            }
-            if (o == perimeterPoints.size() - 1) {
-                stopIndex = i;
-                o = -1;
-            }
-        }
+        List<PolygonLink> intersections = findCircleGroundIntersections2(circle);
+        List<Coordinates> circlePerimeterPoints = getCirclePerimeterPoints(center, radius);
+        Coordinates closestToFirstIntersection = findClosestCoordinate(circlePerimeterPoints, intersections.get(0).getCoordinates());
+        circlePerimeterPoints = startListAtIndex(circlePerimeterPoints, circlePerimeterPoints.indexOf(closestToFirstIntersection));
+        addNewLinksToGround(intersections, circlePerimeterPoints, circle);
     }
 
     /*assumes no negative coordinates*/
@@ -217,6 +210,7 @@ public class Ground implements Drawable {
     public Color getColor() {
         return Color.BEIGE;
     }
+
     @Override
     public void draw(GraphicsContext context) {
         context.setFill(getColor());

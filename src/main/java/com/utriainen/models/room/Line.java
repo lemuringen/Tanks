@@ -8,8 +8,8 @@ import java.util.List;
 public class Line {
     private Coordinates p0;
     private Coordinates p1;
-    private double slope;
-    private double yInterception;
+    private final double slope;
+    private final double yInterception;
 
 
     public Line(Coordinates p0, Coordinates p1) {
